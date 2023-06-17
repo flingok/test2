@@ -1,0 +1,32 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/fuhai/catkin_ws/devel/include/**",
+        "/opt/ros/melodic/include/**",
+        "/home/fuhai/catkin_ws/src/ndt_localisation/graph_map/graph_localization/include/**",
+        "/home/fuhai/catkin_ws/src/ndt_localisation/graph_map/graph_map/include/**",
+        "/home/fuhai/catkin_ws/src/jaguar_robot/include/**",
+        "/home/fuhai/learning_ws/src/leaning_img/include/**",
+        "/home/fuhai/catkin_ws/src/learning_service/include/**",
+        "/home/fuhai/catkin_ws/src/learning_topic/include/**",
+        "/home/fuhai/catkin_ws/src/liosam_mapper/include/**",
+        "/home/fuhai/catkin_ws/src/ndt_localisation/ndt_core/ndt_generic/include/**",
+        "/home/fuhai/catkin_ws/src/ndt_localisation/ndt_core/ndt_map/include/**",
+        "/home/fuhai/catkin_ws/src/ndt_localisation/ndt_core/ndt_rviz/include/**",
+        "/home/fuhai/catkin_ws/src/ndt_localisation/ndt_core/ndt_visualisation/include/**",
+        "/home/fuhai/catkin_ws/src/ouster_example/ouster_ros/include/**",
+        "/home/fuhai/catkin_ws/src/pointcloud_align/include/**",
+        "/home/fuhai/catkin_ws/src/vtr_lite/include/**",
+        "/home/fuhai/catkin_ws/src/zed-ros-wrapper/zed-ros-interfaces/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}
