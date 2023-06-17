@@ -35,6 +35,7 @@ ros::Subscriber distEventSub_;
 ros::Subscriber distSub_;
 ros::Subscriber infoSub_; 
 image_transport::Subscriber image_sub_;
+image_transport::Subscriber image_sub1_;
 image_transport::Publisher image_pub_;
 
 /* Service for set/reset distance */
@@ -197,7 +198,7 @@ void executeCB(const stroll_bearnav::mapperGoalConstPtr &goal, Server *serv)
 
 	if (!client.call(srv)) ROS_ERROR("Failed to call service SetDistance provided by odometry_monitor node!");
 	while(state == MAPPING || state == SAVING || state == PREPARING){
-
+        //cout << "state: " << state << endl;
 		/*on preempt request end mapping and save current map */
 		if(server->isPreemptRequested() || userStop)
 		{
@@ -212,7 +213,7 @@ void executeCB(const stroll_bearnav::mapperGoalConstPtr &goal, Server *serv)
 			descriptorMap.push_back(descriptors);
 			distanceMap.push_back(distanceTravelled);
 			ratingsMap.push_back(ratings);
-
+            //cout << "state: " << state << endl;
 			/*and flush it to the disk*/
 			for (int i = 0;i<distanceMap.size();i++){
 				sprintf(name,"%s/%s_%.3f.yaml",folder.c_str(),baseName.c_str(),distanceMap[i]);
@@ -399,6 +400,7 @@ int main(int argc, char** argv)
 	infoSub_ = nh.subscribe("/navigationInfo", 1000, infoMapMatch);
 
 	image_sub_ = it_.subscribe( "/image", 1,imageCallback);					//THIS IS A PROBLEM WHEN GENERATING GROUND TRUTH
+	image_sub_ = it_.subscribe( "/image_event", 1,imageCallback);
 	if(!isPlastic) featureSub_ = nh.subscribe<stroll_bearnav::FeatureArray>("/features",1,featureCallback);
 	distEventSub_=nh.subscribe<std_msgs::Float32>("/distance_events",1,distanceEventCallback);
 	distSub_=nh.subscribe<std_msgs::Float32>("/distance",1,distanceCallback);
@@ -419,7 +421,7 @@ int main(int argc, char** argv)
 	int event_count = 0;
 	ros::Time lastEventTime = ros::Time::now();
 
-	while (ros::ok()){
+	while (ros::ok()){	
 		if (state == MAPPING)
 		{   /* speed limits */
 			forwardSpeed += forwardAcceleration;

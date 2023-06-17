@@ -15,7 +15,6 @@
 #include <stroll_bearnav/PathProfile.h>
 #include <cmath>
 #include <std_msgs/Float32.h>
-#include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/xfeatures2d.hpp>
@@ -27,7 +26,6 @@
 #include <stroll_bearnav/navigatorConfig.h>
 #include <stroll_bearnav/NavigationInfo.h>
 #include <nn_matcher/NNImageMatching.h>
-#include <nn_matcher/nnfeature.h>
 #include <string>
 
 using namespace cv;
@@ -51,7 +49,6 @@ ros::Subscriber speedSub_;
 ros::Subscriber distSub_;
 ros::Subscriber distEventSub_;
 ros::Subscriber saverSub_;
-ros::Subscriber image_map_index_sub_;
 image_transport::Subscriber image_sub_;
 image_transport::Subscriber image_map_sub_;
 image_transport::Publisher image_pub_;
@@ -92,7 +89,6 @@ float differenceRotInt=0;
 float minimalAdaptiveSpeed = 1.0;
 float maximalAdaptiveSpeed = 1.0;
 float maximalCurvature = 1.0;
-int image_index = 0;
 bool imgShow;
 NormTypes featureNorm = NORM_INF;
 int descriptorType = CV_32FC1;
@@ -104,7 +100,7 @@ stroll_bearnav::Feature feature;
 /*PID Control*/
 float PID_Kp, PID_Ki, PID_Kd;
 float error_accumlation;
-float last_error=0;
+float last_error;
 std::vector<float> offset_queue;
 ros::Publisher kp_pub, ki_pub, control_output, current_pub;
 
@@ -244,7 +240,7 @@ void actionServerCB(const stroll_bearnav::navigatorGoalConstPtr &goal, Server *s
 
 
 /* get image from map */
-/* void imageMapCallback(const sensor_msgs::ImageConstPtr& msg)
+void imageMapCallback(const sensor_msgs::ImageConstPtr& msg)
 {
 
 	cv_bridge::CvImagePtr cv_ptr;
@@ -258,15 +254,8 @@ void actionServerCB(const stroll_bearnav::navigatorGoalConstPtr &goal, Server *s
 		return;
 	}
     cvtColor(cv_ptr->image, mapImage, cv::COLOR_BGR2GRAY);
-} */
-
-void imageMapCallback(const std_msgs::Int32::ConstPtr& msg)
-{
-
-	image_index=msg->data;
-	cout << "image_index " << image_index << endl;
-
 }
+
 /*to select most rating matches*/
 bool compare_rating(stroll_bearnav::Feature first, stroll_bearnav::Feature second)
 {
@@ -291,7 +280,7 @@ float PID(float error) {
     msg.data = max(min(PID_Kp*error + PID_Ki*error_accumlation + PID_Kd*delta, float(500)), float(-500));
     control_output.publish(msg);
 
-    return max(min(PID_Kp*error + PID_Ki*error_accumlation + PID_Kd*delta , float(500)), float(-500));
+    return max(min(PID_Kp*error + PID_Ki*error_accumlation + PID_Kd*delta, float(500)), float(-500));
 }
 
 void writeLog(std_msgs::String msg) {
@@ -309,10 +298,8 @@ void writeLog(std_msgs::String msg) {
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {;
-    if (image_index == 0){
-        return;
-    }
 
+    //state = NAVIGATING;
     if(state == NAVIGATING){
 
         currentKeypoints.clear();
@@ -334,10 +321,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
         //imwrite( "/home/kevin/currentImage"+to_string(time)+".jpg", currentImage);
         
-        //srv.request.image_map = *(cv_bridge::CvImage(std_msgs::Header(), "mono8", mapImage).toImageMsg());
-        srv.request.image_map_index = image_index;
+        srv.request.image_map = *(cv_bridge::CvImage(std_msgs::Header(), "mono8", mapImage).toImageMsg());
+
         //imwrite( "/home/kevin/mapImage" + to_string(time) + ".jpg", mapImage);
-		cout << "image_index " << image_index << endl;
+
         // call feature maching service
         if (client2.call(srv))
         {
@@ -348,10 +335,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
             ROS_ERROR("Failed to call service to match two images.");
             return;
         }
-        if (srv.response.differences.size() == 0){
-            return;
 
-        }
         good_matches.clear();
 
         int numBins = srv.response.differences.size();
@@ -608,9 +592,9 @@ void distanceCallback(const std_msgs::Float32::ConstPtr& msg)
 
             ROS_INFO("angular vel %f", twist.angular.z);
             ROS_INFO("differenceRot %f", differenceRot);
-            ROS_INFO("pixelTurnGain %f", pixelTurnGain);    
+            ROS_INFO("pixelTurnGain %f", pixelTurnGain);
             
-			twist.angular.z+= differenceRot*pixelTurnGain;
+			twist.angular.z+=differenceRot*pixelTurnGain;
 			//if (twist.angular.z > +twist.linear.x*maximalCurvature) twist.angular.z  = +twist.linear.x*maximalCurvature; 
 			//if (twist.angular.z < -twist.linear.x*maximalCurvature) twist.angular.z  = -twist.linear.x*maximalCurvature; 
  
@@ -638,7 +622,7 @@ void distanceCallback(const std_msgs::Float32::ConstPtr& msg)
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "navigator");
+	ros::init(argc, argv, "navigator_zed");
 
 	ros::NodeHandle nh;
 	image_transport::ImageTransport it_(nh);
@@ -648,9 +632,8 @@ int main(int argc, char** argv)
     ros::param::get("~write_log", write_log);
     ros::param::get("~folder", folder);
 
-	image_sub_ = it_.subscribe( "/image_event", 1,imageCallback);
-	//image_map_sub_ = it_.subscribe( "/map_image_index", 1,imageMapCallback);
-	image_map_index_sub_=nh.subscribe<std_msgs::Int32>("/map_image_index",1,imageMapCallback);
+	image_sub_ = it_.subscribe( "/image_with_features", 1,imageCallback);
+	image_map_sub_ = it_.subscribe( "/map_image", 1,imageMapCallback);
 	cmd_pub_ = nh.advertise<geometry_msgs::Twist>("cmd",1);
 	info_pub_ = nh.advertise<stroll_bearnav::NavigationInfo>("/navigationInfo",1);
 	image_pub_ = it_.advertise("/navigationMatches", 1);

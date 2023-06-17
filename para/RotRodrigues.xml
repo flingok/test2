@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<RotRodrigues type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>1</cols>
+  <dt>d</dt>
+  <data>
+   0.004013   -0.006446  -0.0002209
+</data>
+</RotRodrigues>
+</opencv_storage>

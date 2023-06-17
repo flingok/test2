@@ -132,7 +132,7 @@ void odomcallback(const nav_msgs::Odometry::ConstPtr& msg)
 		eventCounter++;
 		distEvent_.data=totalDist;
 		distEvent_pub_.publish(distEvent_);
-	} 
+    }
 	dist_.data=totalDist;
 	dist_pub_.publish(dist_);
 }
